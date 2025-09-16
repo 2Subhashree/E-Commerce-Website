@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Poppins&display=swap');
+
+html{
+  scroll-behavior: smooth;
+}
+
+body{
+  font-family: "Poppins", sans-serif;
+  font-weight: 400;
+  font-style: normal;
+  @apply bg-[#B0BEC5] text-neutral-700 scroll-smooth
+}
+.scrollbar-none::-webkit-scrollbar{
+  display: none;
+}
+.scrollbarCustom::-webkit-scrollbar{
+  width: 10px;
+  @apply bg-slate-200
+}
+.scrollbarCustom::-webkit-scrollbar-thumb{
+  @apply bg-slate-400 rounded-full
+}
