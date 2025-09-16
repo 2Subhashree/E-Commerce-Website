@@ -5,10 +5,10 @@ const Product = require("../models/productModel");
 exports.addToCartItem = async(req,res)=> {
   try {
     const userId = req.userId
-    const { productId, variantId } = req.body
+    const { productId, size, color } = req.body
 
-    if (!productId || !variantId) {
-      return res.status(400).json({ message: "ProductId and variantId are required", success: false })
+    if (!productId || !size || !color) {
+      return res.status(400).json({ message: "ProductId, size and color are required", success: false })
     }
 
     // Find product
@@ -18,16 +18,22 @@ exports.addToCartItem = async(req,res)=> {
     }
 
     // Find variant inside product
-    const selectedVariant = product.variants.id(variantId)   // <-- must match your product schema field
-    if (!selectedVariant) {
-      return res.status(404).json({ message: "Variant not found", success: false })
+    const sizeVariant = product.variants.get(size)
+    if(!sizeVariant){
+      return res.status(404).json({message : `Size ${size} not fount`, success : false})
+    }
+
+    const colorVariant = sizeVariant.colors.get(color)
+    if(!colorVariant){
+      return res.status(404).json({message : `Color ${color} not fount`, success : false})
     }
 
     // Check if already in cart
     const existingCartItem = await CartProduct.findOne({
       userId,
       productId,
-      "selectedVariant._id": variantId
+      "selectedVariant.size": size,
+      "selectedVariant.color": color
     })
 
     if (existingCartItem) {
@@ -39,17 +45,18 @@ exports.addToCartItem = async(req,res)=> {
       userId,
       productId,
       selectedVariant: {
-        _id: selectedVariant._id,
-        unit: selectedVariant.unit,
-        price: selectedVariant.price,
-        discount: selectedVariant.discount,
-        stock: selectedVariant.stock
+        size,
+        color,
+        price: colorVariant.price,
+        discount: colorVariant.discount,
+        stock: colorVariant.stock
       },
       quantity: 1
     })
 
     const savedItem = await cartItem.save()
 
+    // update user shoping cart references
     await User.updateOne(
       { _id: userId },
       { $push: { shopping_cart: savedItem._id } }
@@ -66,20 +73,50 @@ exports.addToCartItem = async(req,res)=> {
 }
 
 exports.getCartItem = async(req,res) => {
-  try {
-    const userId = req.userId  //only login user is access
+ try {
+    const userId = req.userId; // only logged-in user can access
 
-    const cartItem = await CartProduct.find({
-      userId : userId     
-    }).populate('productId')
+    const cartItems = await CartProduct.find({ userId })
+      .populate({
+        path: "productId",
+        select: "_id name image category subCategory"
+      })
+      .lean();
+
+    // Filter out items with deleted/missing products
+    const formattedCart = cartItems
+      .filter(item => item.productId) // keep only valid products
+      .map(item => {
+        const product = item.productId;
+
+        return {
+          _id: item._id,
+          quantity: item.quantity,
+          product: {
+            _id: product._id,
+            name: product.name,
+            image: product.image?.[0] || "",
+            category: product.category || [],
+            subCategory: product.subCategory || []
+          },
+          variant: {
+            size: item.selectedVariant?.size || "",
+            color: item.selectedVariant?.color || "",
+            price: item.selectedVariant?.price || 0,
+            discount: item.selectedVariant?.discount || 0
+          }
+        };
+      });
 
     return res.json({
-      data : cartItem,
-      success : true
-    })
-
+      success: true,
+      data: formattedCart
+    });
   } catch (error) {
-    return res.status(500).json({message : error.message || error, success : false})
+    return res.status(500).json({
+      message: error.message || "Server error",
+      success: false
+    });
   }
 }
 
@@ -99,7 +136,7 @@ exports.updateCartItemQty = async (req, res) => {
     }
 
     // find the cart item
-    const cartItem = await CartProduct.findOne({ _id, userId });
+    const cartItem = await CartProduct.findOne({ _id, userId }).populate('productId');
     if (!cartItem) {
       return res.status(404).json({
         message: "Cart item not found",
@@ -113,6 +150,15 @@ exports.updateCartItemQty = async (req, res) => {
       return res.json({
         message: "Item removed from cart",
         success: true,
+      });
+    }
+
+      // ✅ Check stock availability before updating
+    const availableStock = cartItem.selectedVariant?.stock || 0;
+    if (qty > availableStock) {
+      return res.status(400).json({
+        message: `Only ${availableStock} items available in stock`,
+        success: false,
       });
     }
 

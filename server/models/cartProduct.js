@@ -12,15 +12,16 @@ const cartProductSchema = new mongoose.Schema({
     required: true 
   },
   selectedVariant: {
-    _id: { type: mongoose.Schema.ObjectId, required: true }, // variant ID from product
-    unit: { type: String, required: true },                  // e.g. "1kg", "500g"
+    size: { type: String, required: true },
+    color : {type : String, required : true},                  // e.g. "1kg", "500g"
     price: { type: Number, required: true },
     discount: { type: Number, default: 0 },
     stock: { type: Number }
   },
   quantity: { 
     type: Number, 
-    default: 1 
+    default: 1,
+    min : 1 
   }
 }, { timestamps: true })
 

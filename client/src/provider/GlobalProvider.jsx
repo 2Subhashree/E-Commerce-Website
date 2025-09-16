@@ -9,23 +9,22 @@ import { priceWithDiscount } from "../utils/PriceWithDiscount";
 import { handleAddAddress } from "../store/addressSlice";
 
 export const GlobalContext = createContext(null);
-
 export const useGlobalContext = () => useContext(GlobalContext);
 
 const GlobalProvider = ({ children }) => {
   const dispatch = useDispatch();
+  const cartItem = useSelector((state) => state.cartItem.cart || []);
+  const user = useSelector((state) => state.user);
+
   const [totalPrice, setTotalPrice] = useState(0);
   const [notDiscountTotalPrice, setNotDiscountTotalPrice] = useState(0);
   const [totalQty, setTotalQty] = useState(0);
-  const cartItem = useSelector((state) => state.cartItem.cart || []);
-  const user = useSelector((state) => state?.user);
 
   // Fetch cart items
   const fetchCartItem = async () => {
     try {
       const response = await Axios({ ...AllApi.getCartItem });
       const { data: responseData } = response;
-
       if (responseData.success) {
         dispatch(handleAddItemCart(responseData.data));
       }
@@ -42,26 +41,24 @@ const GlobalProvider = ({ children }) => {
         data: { _id: id, qty },
       });
       const { data: responseData } = response;
-
       if (responseData.success) {
         fetchCartItem();
         return responseData;
       }
     } catch (error) {
       AxiosToastError(error);
-      return error;
+      return { success: false, message: error.message };
     }
   };
 
   // Delete cart item
-  const deleteCartItem = async (cartId) => {
+  const deleteCartItem = async (id) => {
     try {
       const response = await Axios({
         ...AllApi.deleteCartItem,
-        data: { _id: cartId },
+        data: { _id: id },
       });
       const { data: responseData } = response;
-
       if (responseData.success) {
         toast.success(responseData.message);
         fetchCartItem();
@@ -71,7 +68,7 @@ const GlobalProvider = ({ children }) => {
     }
   };
 
-  // Calculate totals safely
+  // Calculate total quantity and prices
   useEffect(() => {
     if (!cartItem || cartItem.length === 0) {
       setTotalQty(0);
@@ -85,21 +82,10 @@ const GlobalProvider = ({ children }) => {
     let originalPriceTotal = 0;
 
     cartItem.forEach((item) => {
-      const variantFromItem = item?.variant ?? null;
-      const variantFromId =
-        !variantFromItem && item?.variantId
-          ? item?.productId?.variants?.find(
-              (v) => String(v._id) === String(item.variantId)
-            )
-          : null;
-
-      const variant = variantFromItem || variantFromId || null;
-
-      const price = Number(variant?.price ?? item?.productId?.price ?? 0);
-      const discount = Number(
-        variant?.discount ?? item?.productId?.discount ?? 0
-      );
-      const qty = Number(item?.quantity ?? 1);
+      const variant = item.variant || {};
+      const qty = Number(item.quantity ?? 1);
+      const price = Number(variant.price ?? 0);
+      const discount = Number(variant.discount ?? 0);
 
       qtyTotal += qty;
       priceTotal += priceWithDiscount(price, discount) * qty;
@@ -122,7 +108,6 @@ const GlobalProvider = ({ children }) => {
     try {
       const response = await Axios({ ...AllApi.getAddress });
       const { data: responseData } = response;
-
       if (responseData.success) {
         dispatch(handleAddAddress(responseData.data));
       }
