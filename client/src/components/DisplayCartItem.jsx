@@ -51,11 +51,12 @@ const DisplayCartItem = ({ close }) => {
               {/* Cart Items */}
               <div className="bg-white rounded-lg p-4 grid gap-5 overflow-auto flex-1">
                 {cartItem.map((item) => {
-                  const product = item?.productId || {};
-                  const variant = item?.selectedVariant || {};
+                  const product = item?.product || {};
+                  const variant = item?.variant || {};
+
                   const discountedPrice = priceWithDiscount(
-                    variant.price,
-                    variant.discount
+                    variant?.price || 0,
+                    variant?.discount || 0
                   );
 
                   return (
@@ -66,7 +67,7 @@ const DisplayCartItem = ({ close }) => {
                       {/* Product Image */}
                       <div className="w-16 h-16 min-h-16 min-w-16 border rounded bg-white flex items-center justify-center">
                         <img
-                          src={item?.image || product?.image?.[0]}
+                          src={product?.image || ""}
                           alt={product?.name || "product"}
                           className="object-scale-down max-w-full max-h-full"
                         />
@@ -74,14 +75,14 @@ const DisplayCartItem = ({ close }) => {
 
                       {/* Product Details */}
                       <div className="flex-1 text-xs">
-                        {/* Name */}
                         <p className="text-xs line-clamp-2 font-medium">
-                          {item?.name || product?.name}
+                          {product?.name}
                         </p>
 
-                        {/* Variant Unit */}
+                        {/* Size & Color */}
                         <p className="text-neutral-400">
-                          {variant.unit || ""}
+                          {variant?.size ? `Size: ${variant.size}` : ""}
+                          {variant?.color ? ` | Color: ${variant.color}` : ""}
                         </p>
 
                         {/* Price */}
@@ -89,7 +90,7 @@ const DisplayCartItem = ({ close }) => {
                           <span className="font-semibold">
                             {DisplayPriceInRupees(discountedPrice)}
                           </span>
-                          {variant.discount > 0 && (
+                          {variant?.discount > 0 && (
                             <span className="line-through text-neutral-400 text-xs">
                               {DisplayPriceInRupees(variant.price)}
                             </span>
@@ -100,7 +101,9 @@ const DisplayCartItem = ({ close }) => {
                       {/* Quantity Controls */}
                       <div>
                         <AddToCartButton
-                          data={{ ...item, selectedVariant: variant }}
+                          data={item?.product}
+                          selectedVariant={item?.variant}   // ✅ pass the exact size & color
+                          inCartItem={item}
                         />
                       </div>
                     </div>
@@ -110,34 +113,33 @@ const DisplayCartItem = ({ close }) => {
 
               {/* Bill Details */}
               <div className="bg-white p-4">
-  <h3 className="font-semibold">Bill details</h3>
+                <h3 className="font-semibold">Bill details</h3>
 
-  <div className="flex justify-between text-sm mt-2">
-    <p>Total Items</p>
-    <p>{totalQty} item(s)</p>
-  </div>
+                <div className="flex justify-between text-sm mt-2">
+                  <p>Total Items</p>
+                  <p>{totalQty} item(s)</p>
+                </div>
 
-  <div className="flex justify-between text-sm">
-    <p>Subtotal</p>
-    <p>
-      <span className="line-through text-neutral-400 mr-2">
-        {DisplayPriceInRupees(notDiscountTotalPrice)}
-      </span>
-      <span>{DisplayPriceInRupees(totalPrice)}</span>
-    </p>
-  </div>
+                <div className="flex justify-between text-sm">
+                  <p>Subtotal</p>
+                  <p>
+                    <span className="line-through text-neutral-400 mr-2">
+                      {DisplayPriceInRupees(notDiscountTotalPrice)}
+                    </span>
+                    <span>{DisplayPriceInRupees(totalPrice)}</span>
+                  </p>
+                </div>
 
-  <div className="flex justify-between text-sm">
-    <p>Delivery Charge</p>
-    <p className="text-green-600">Free</p>
-  </div>
+                <div className="flex justify-between text-sm">
+                  <p>Delivery Charge</p>
+                  <p className="text-green-600">Free</p>
+                </div>
 
-  <div className="font-semibold flex justify-between mt-2">
-    <p>Grand Total</p>
-    <p>{DisplayPriceInRupees(totalPrice)}</p>
-  </div>
-</div>
-
+                <div className="font-semibold flex justify-between mt-2">
+                  <p>Grand Total</p>
+                  <p>{DisplayPriceInRupees(totalPrice)}</p>
+                </div>
+              </div>
             </>
           ) : (
             /* Empty Cart */

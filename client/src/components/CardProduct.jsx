@@ -143,7 +143,7 @@ const CardProduct = ({ data }) => {
         {selectedVariant.stock === 0 ? (
           <p className="text-red-400 text-sm text-center">Out of stock</p>
         ) : (
-          <AddToCartButton data={{ ...data, selectedVariant }} />
+          <AddToCartButton  data={data} selectedVariant={selectedVariant} />
         )}
       </div>
     </Link>

@@ -8,7 +8,7 @@ import Loading from "../components/Loading"
 import { useSelector } from 'react-redux';
 import { FaMinus, FaPlus } from "react-icons/fa6";
 
-const AddToCartButton = ({ data }) => {
+const AddToCartButton = ({ data, selectedVariant, inCartItem}) => {
   const [loading, setLoading] = useState(false);
   const { fetchCartItem, updateCartItem, deleteCartItem } = useGlobalContext();
   const cartItem = useSelector(state => state.cartItem.cart || []);
@@ -17,16 +17,22 @@ const AddToCartButton = ({ data }) => {
   const [cartItemDetails, setCartItemDetails] = useState(null);
 
   // --- Select first size and color by default ---
-  const [selectedSize, setSelectedSize] = useState(null);
-  const [selectedColor, setSelectedColor] = useState(null);
+  // const [selectedSize, setSelectedSize] = useState(null);
+  // const [selectedColor, setSelectedColor] = useState(null);
+  const selectedSize = selectedVariant?.unit || null
+  const selectedColor = selectedVariant?.color || null
 
-  useEffect(() => {
-    if (!data || !data.variants) return;
-    const firstSize = Object.keys(data.variants)[0];
-    const firstColor = firstSize ? Object.keys(data.variants[firstSize].colors)[0] : null;
-    setSelectedSize(firstSize);
-    setSelectedColor(firstColor);
-  }, [data]);
+  // select first size and color bydefault
+  // useEffect(() => {
+  //   if (!data || !data.variants) return;
+  //   const firstSize = Object.keys(data.variants)[0];
+  //   const firstColor = firstSize ? Object.keys(data.variants[firstSize].colors)[0] : null;
+  //   setSelectedSize(firstSize);
+  //   setSelectedColor(firstColor);
+  // }, [data]);
+
+
+
 
   // --- Add to cart ---
   const handleAddToCart = async (e) => {
@@ -60,32 +66,39 @@ const AddToCartButton = ({ data }) => {
     }
   };
 
-  // --- Check if this item is in cart ---
+    // --- Check if this item is in cart ---
   useEffect(() => {
-    if (!selectedSize || !selectedColor) return;
-
-    const productInCart = cartItem.find(
-      item =>
-        item.product._id === data._id &&
-        item.variant.size === selectedSize &&
-        item.variant.color === selectedColor
-    );
-
-    if (productInCart) {
+    if (inCartItem) {
       setIsAvailableCart(true);
-      setQty(productInCart.quantity);
-      setCartItemDetails(productInCart);
+      setQty(inCartItem.quantity);   // set correct saved qty
+      setCartItemDetails(inCartItem);
     } else {
-      setIsAvailableCart(false);
-      setQty(0);
-      setCartItemDetails(null);
+      // fallback → check redux cart
+      const productInCart = cartItem.find(
+        item =>
+          item.product._id === data._id &&
+          item.variant.size === selectedSize &&
+          item.variant.color === selectedColor
+      );
+
+      if (productInCart) {
+        setIsAvailableCart(true);
+        setQty(productInCart.quantity);
+        setCartItemDetails(productInCart);
+      } else {
+        setIsAvailableCart(false);
+        setQty(0);
+        setCartItemDetails(null);
+      }
     }
-  }, [cartItem, selectedSize, selectedColor, data]);
+  }, [cartItem, inCartItem, data, selectedSize, selectedColor]);
+
+  
 
   // --- Increase / decrease qty ---
   const increaseQty = async (e) => {
-    e.preventDefault()
-    e.stopPropagation()
+    e.preventDefault();
+    e.stopPropagation();
 
     if (!cartItemDetails) return;
     const response = await updateCartItem(cartItemDetails._id, qty + 1);
@@ -93,8 +106,8 @@ const AddToCartButton = ({ data }) => {
   };
 
   const decreaseQty = async (e) => {
-    e.preventDefault()
-    e.stopPropagation()
+    e.preventDefault();
+    e.stopPropagation();
 
     if (!cartItemDetails) return;
     const newQty = qty - 1;

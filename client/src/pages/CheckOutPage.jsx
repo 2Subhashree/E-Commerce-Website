@@ -115,16 +115,17 @@ const CheckOutPage = () => {
             <h3 className="font-semibold">Bill details</h3>
             <div className="flex gap-4 justify-between ml-1">
               <p>Total Items</p>
+              
+              <p className="flex items-center gap-2">{totalQty} items</p>
+            </div>
+            <div className="flex gap-4 justify-between ml-1">
+              <p>Total price</p>
               <p className="flex items-center gap-2">
                 <span className="line-through text-neutral-400">
                   {DisplayPriceInRupees(notDiscountTotalPrice)}
                 </span>
                 <span>{DisplayPriceInRupees(totalPrice)}</span>
               </p>
-            </div>
-            <div className="flex gap-4 justify-between ml-1">
-              <p>Total Quantity</p>
-              <p className="flex items-center gap-2">{totalQty} item</p>
             </div>
             <div className="flex gap-4 justify-between ml-1">
               <p>Delivery Charge</p>

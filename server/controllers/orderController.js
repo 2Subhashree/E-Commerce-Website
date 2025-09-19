@@ -11,13 +11,19 @@ exports.cashOnDeliveryOrder = async(req,res)=>{
     const { list_items, totalAmt, addressId, subTotalAmt } = req.body
 
     const payload = list_items.map(el => {
+       const productId =
+        el.productId?._id || el.productId; // ✅ handle both object & id case
+      const productName =
+        el.productId?.name || el.product_details?.name || "";
+      const productImage =
+        el.productId?.image || el.product_details?.image || [];
       return({
         userId : userId,
         orderId : `ORD-${new mongoose.Types.ObjectId()}`,
-        productId : el.productId._id,
+        productId : productId,
         product_details : {
-          name : el.productId.name,
-          image : el.productId.image
+          name : productName,
+          image : productImage
         },
         paymentId : "",
         payment_status : "CASH ON DELIVERY",
